@@ -32,6 +32,7 @@ async function run() {
 
     const db = client.db("local_chef_db");
     const mealsCollection = db.collection("meals");
+    const usersCollection=db.collection('users')
 
     // get all meals
     app.get("/meals", async (req, res) => {
@@ -95,7 +96,25 @@ async function run() {
         res.status(500).send({ message: "Error fetching meal", error });
       }
     });
+  //  users
+    app.post("/users", async (req, res) => {
+      try {
+        const { name, email, address, password, photoURL, status } = req.body;
 
+        // Check duplicate
+        const existingUser = await usersCollection.findOne({ email });
+        if (existingUser) {
+          return res.status(400).json({ message: "User already exists" });
+        }
+
+        const newUser = { name, email, address, password, photoURL, status: status || "active" };
+        await usersCollection.insertOne(newUser);
+
+        res.status(201).json({ message: "User created successfully", user: newUser });
+      } catch (error) {
+        res.status(500).json({ message: "Error creating user", error });
+      }
+    });
     
   } finally {
    
