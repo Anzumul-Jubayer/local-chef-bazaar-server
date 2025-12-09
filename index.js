@@ -76,6 +76,25 @@ async function run() {
         res.status(500).send({ message: "Error fetching meals", error });
       }
     });
+  
+    // meal details page
+   
+    app.get("/meal-details/:id", async (req, res) => {
+      const id = req.params.id;
+      const { ObjectId } = require("mongodb");
+
+      try {
+        const meal = await mealsCollection.findOne({ _id: new ObjectId(id) });
+
+        if (!meal) {
+          return res.status(404).send({ message: "Meal not found" });
+        }
+
+        res.send(meal);
+      } catch (error) {
+        res.status(500).send({ message: "Error fetching meal", error });
+      }
+    });
 
     
   } finally {
