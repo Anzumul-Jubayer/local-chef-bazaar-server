@@ -1,41 +1,90 @@
 const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion } = require("mongodb");
+require("dotenv").config();
+
 const app = express();
-require('dotenv').config()
 const port = 3000;
+
 app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("local chef server is running");
+  res.send("Local Chef server is running");
 });
 
-const uri =
-  `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.3w2hwbo.mongodb.net/?appName=Cluster0`;
+// MONGO CONNECTION
+const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.3w2hwbo.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
+    strict: false,
+    deprecationErrors: false,
   },
 });
+
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
+    // client connect
     await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    console.log("MongoDB Connected!");
+
+    const db = client.db("local_chef_db");
+    const mealsCollection = db.collection("meals");
+
+    // get all meals
+    app.get("/meals", async (req, res) => {
+      try {
+        let page = parseInt(req.query.page) || 1;
+        let limit = parseInt(req.query.limit) || 10;
+        let skip = (page - 1) * limit;
+
+        let sortOrder = req.query.sort === "desc" ? -1 : 1; 
+        let deliveryArea = req.query.area;
+        let search = req.query.search;
+
+        
+        let filter = {};
+
+        if (deliveryArea) {
+          filter.deliveryArea = { $regex: deliveryArea, $options: "i" };
+        }
+
+        if (search) {
+          filter.foodName = { $regex: search, $options: "i" };
+        }
+
+        const totalMeals = await mealsCollection.countDocuments(filter);
+
+        const meals = await mealsCollection
+          .find(filter)
+          .sort({ price: sortOrder })
+          .skip(skip)
+          .limit(limit)
+          .toArray();
+
+        res.send({
+          success: true,
+          total: totalMeals,
+          page,
+          limit,
+          totalPages: Math.ceil(totalMeals / limit),
+          data: meals,
+        });
+      } catch (error) {
+        res.status(500).send({ message: "Error fetching meals", error });
+      }
+    });
+
+    
   } finally {
-    // Ensures that the client will close when you finish/error
-    await client.close();
+   
   }
 }
+
 run().catch(console.dir);
+
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`Server running on port: ${port}`);
 });
