@@ -166,6 +166,43 @@ async function run() {
           .send({ success: false, message: "Error fetching reviews", error });
       }
     });
+     
+    //  Add to Favorites
+   
+    app.post("/favorites", async (req, res) => {
+      try {
+        const fav = req.body;
+
+        // check if already exists
+        const exists = await favoritesCollection.findOne({
+          userEmail: fav.userEmail,
+          mealId: fav.mealId,
+        });
+
+        if (exists) {
+          return res.send({
+            success: false,
+            message: "Already added to favorites",
+          });
+        }
+
+        fav.addedTime = new Date();
+
+        const result = await favoritesCollection.insertOne(fav);
+
+        res.send({
+          success: true,
+          message: "Added to favorites successfully",
+          data: fav,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: "Error adding to favorites",
+          error,
+        });
+      }
+    });
   } finally {
   }
 }
