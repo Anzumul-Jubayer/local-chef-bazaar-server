@@ -1,4 +1,5 @@
 const express = require("express");
+const Stripe = require("stripe");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 require("dotenv").config();
@@ -260,9 +261,7 @@ async function run() {
       }
     });
 
-    
-
-    // users GET by email
+    // users  by email
     app.get("/users/:email", async (req, res) => {
       try {
         const email = req.params.email;
@@ -327,6 +326,83 @@ async function run() {
         res
           .status(500)
           .send({ success: false, message: "Server error", error });
+      }
+    });
+    // orders by user email
+    app.get("/orders/user/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const orders = await ordersCollection
+          .find({ userEmail: email })
+          .sort({ orderTime: -1 })
+          .toArray();
+
+        res.send({ success: true, data: orders });
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .send({ success: false, message: "Failed to fetch orders" });
+      }
+    });
+    //  payment status
+    app.patch("/orders/:id/payment", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { paymentInfo } = req.body; 
+
+        const { ObjectId } = require("mongodb");
+        const result = await ordersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { paymentStatus: "paid", paymentInfo } }
+        );
+
+        if (result.modifiedCount > 0) {
+          res.send({ success: true, message: "Payment updated successfully" });
+        } else {
+          res.status(404).send({ success: false, message: "Order not found" });
+        }
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .send({ success: false, message: "Failed to update payment" });
+      }
+    });
+    // payment
+   const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
+       // Create PaymentIntent
+    app.post("/create-payment-intent", async (req, res) => {
+      const { amount } = req.body;
+      try {
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount,
+          currency: "usd",
+          payment_method_types: ["card"],
+        });
+        res.send({ clientSecret: paymentIntent.client_secret });
+      } catch (error) {
+        res.status(500).send({ error: error.message });
+      }
+    });
+
+    // Update order payment status after successful payment
+    app.patch("/orders/:id/payment", async (req, res) => {
+      const { id } = req.params;
+      const { paymentInfo } = req.body;
+      try {
+        const result = await ordersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { paymentStatus: "paid", paymentInfo } }
+        );
+        if (result.modifiedCount > 0) {
+          res.send({ success: true, message: "Payment updated successfully" });
+        } else {
+          res.status(404).send({ success: false, message: "Order not found" });
+        }
+      } catch (error) {
+        res.status(500).send({ success: false, message: "Failed to update payment" });
       }
     });
   } finally {
