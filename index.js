@@ -468,6 +468,38 @@ async function run() {
           .send({ success: false, message: "Failed to update review", error });
       }
     });
+    // delete favorite
+   
+    app.delete("/favorites/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { ObjectId } = require("mongodb");
+
+        const result = await favoritesCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+
+        if (result.deletedCount > 0) {
+          res.send({
+            success: true,
+            message: "Favorite meal removed successfully",
+          });
+        } else {
+          res
+            .status(404)
+            .send({ success: false, message: "Favorite meal not found" });
+        }
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .send({
+            success: false,
+            message: "Failed to remove favorite meal",
+            error,
+          });
+      }
+    });
   } finally {
   }
 }
