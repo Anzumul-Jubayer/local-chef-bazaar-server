@@ -32,7 +32,9 @@ async function run() {
 
     const db = client.db("local_chef_db");
     const mealsCollection = db.collection("meals");
-    const usersCollection=db.collection('users')
+    const usersCollection = db.collection("users");
+    const reviewsCollection = db.collection("reviews");
+    const favoritesCollection = db.collection("favorites");
 
     // get all meals
     app.get("/meals", async (req, res) => {
@@ -41,11 +43,10 @@ async function run() {
         let limit = parseInt(req.query.limit) || 10;
         let skip = (page - 1) * limit;
 
-        let sortOrder = req.query.sort === "desc" ? -1 : 1; 
+        let sortOrder = req.query.sort === "desc" ? -1 : 1;
         let deliveryArea = req.query.area;
         let search = req.query.search;
 
-        
         let filter = {};
 
         if (deliveryArea) {
@@ -77,9 +78,9 @@ async function run() {
         res.status(500).send({ message: "Error fetching meals", error });
       }
     });
-  
+
     // meal details page
-   
+
     app.get("/meal-details/:id", async (req, res) => {
       const id = req.params.id;
       const { ObjectId } = require("mongodb");
@@ -96,28 +97,58 @@ async function run() {
         res.status(500).send({ message: "Error fetching meal", error });
       }
     });
-  //  users
+    //  users
     app.post("/users", async (req, res) => {
       try {
         const { name, email, address, password, photoURL, status } = req.body;
 
-        // Check duplicate
         const existingUser = await usersCollection.findOne({ email });
         if (existingUser) {
           return res.status(400).json({ message: "User already exists" });
         }
 
-        const newUser = { name, email, address, password, photoURL, status: status || "active" };
+        const newUser = {
+          name,
+          email,
+          address,
+          password,
+          photoURL,
+          status: status || "active",
+        };
         await usersCollection.insertOne(newUser);
 
-        res.status(201).json({ message: "User created successfully", user: newUser });
+        res
+          .status(201)
+          .json({ message: "User created successfully", user: newUser });
       } catch (error) {
         res.status(500).json({ message: "Error creating user", error });
       }
     });
-    
+
+  
+    // Add Review
+ 
+    app.post("/reviews", async (req, res) => {
+      try {
+        const review = req.body;
+        review.date = new Date();
+
+        const result = await reviewsCollection.insertOne(review);
+
+        res.send({
+          success: true,
+          message: "Review added successfully",
+          data: review,
+        });
+      } catch (error) {
+        res
+          .status(500)
+          .send({ success: false, message: "Error adding review", error });
+      }
+    });
+
+
   } finally {
-   
   }
 }
 
