@@ -35,7 +35,7 @@ async function run() {
     const usersCollection = db.collection("users");
     const reviewsCollection = db.collection("reviews");
     const favoritesCollection = db.collection("favorites");
-    const ordersCollection=db.collection('orders')
+    const ordersCollection = db.collection("orders");
 
     // get all meals
     app.get("/meals", async (req, res) => {
@@ -165,6 +165,26 @@ async function run() {
         res
           .status(500)
           .send({ success: false, message: "Error fetching reviews", error });
+      }
+    });
+    // get reviews
+    app.get("/reviews", async (req, res) => {
+      try {
+        const reviews = await reviewsCollection
+          .find()
+          .sort({ date: -1 })
+          .toArray();
+
+        res.send({
+          success: true,
+          data: reviews,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: "Error fetching reviews",
+          error,
+        });
       }
     });
 
