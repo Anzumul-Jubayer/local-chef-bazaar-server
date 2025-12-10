@@ -167,12 +167,13 @@ async function run() {
           .send({ success: false, message: "Error fetching reviews", error });
       }
     });
-    // get reviews
+    // get  reviews
     app.get("/reviews", async (req, res) => {
       try {
         const reviews = await reviewsCollection
           .find()
-          .sort({ date: -1 })
+          .sort({ date: -1 }) 
+          .limit(3) 
           .toArray();
 
         res.send({
