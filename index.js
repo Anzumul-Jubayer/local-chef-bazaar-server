@@ -203,6 +203,32 @@ async function run() {
         });
       }
     });
+    
+
+    
+    // Get  Favorites
+ 
+    app.get("/favorites/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+
+        const data = await favoritesCollection
+          .find({ userEmail: email })
+          .sort({ addedTime: -1 })
+          .toArray();
+
+        res.send({
+          success: true,
+          data,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: "Error fetching favorites",
+          error,
+        });
+      }
+    });
   } finally {
   }
 }
