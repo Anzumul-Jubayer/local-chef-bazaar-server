@@ -125,9 +125,7 @@ async function run() {
       }
     });
 
-  
     // Add Review
- 
     app.post("/reviews", async (req, res) => {
       try {
         const review = req.body;
@@ -147,7 +145,27 @@ async function run() {
       }
     });
 
+    // Get Reviews
 
+    app.get("/reviews/:foodId", async (req, res) => {
+      try {
+        const foodId = req.params.foodId;
+
+        const reviews = await reviewsCollection
+          .find({ foodId })
+          .sort({ date: -1 })
+          .toArray();
+
+        res.send({
+          success: true,
+          data: reviews,
+        });
+      } catch (error) {
+        res
+          .status(500)
+          .send({ success: false, message: "Error fetching reviews", error });
+      }
+    });
   } finally {
   }
 }
