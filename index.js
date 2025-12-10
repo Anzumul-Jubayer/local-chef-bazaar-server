@@ -349,7 +349,7 @@ async function run() {
     app.patch("/orders/:id/payment", async (req, res) => {
       try {
         const { id } = req.params;
-        const { paymentInfo } = req.body; 
+        const { paymentInfo } = req.body;
 
         const { ObjectId } = require("mongodb");
         const result = await ordersCollection.updateOne(
@@ -370,9 +370,9 @@ async function run() {
       }
     });
     // payment
-   const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+    const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-       // Create PaymentIntent
+    // Create PaymentIntent
     app.post("/create-payment-intent", async (req, res) => {
       const { amount } = req.body;
       try {
@@ -402,7 +402,70 @@ async function run() {
           res.status(404).send({ success: false, message: "Order not found" });
         }
       } catch (error) {
-        res.status(500).send({ success: false, message: "Failed to update payment" });
+        res
+          .status(500)
+          .send({ success: false, message: "Failed to update payment" });
+      }
+    });
+
+    // user review
+
+    app.get("/reviews/user/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const reviews = await reviewsCollection
+          .find({
+            reviewerEmail: email,
+          })
+          .sort({ date: -1 })
+          .toArray();
+
+        res.send({ success: true, data: reviews });
+      } catch (error) {
+        res
+          .status(500)
+          .send({ success: false, message: "Failed to fetch reviews", error });
+      }
+    });
+    app.delete("/reviews/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { ObjectId } = require("mongodb");
+        const result = await reviewsCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+
+        if (result.deletedCount > 0) {
+          res.send({ success: true, message: "Review deleted successfully" });
+        } else {
+          res.status(404).send({ success: false, message: "Review not found" });
+        }
+      } catch (error) {
+        res
+          .status(500)
+          .send({ success: false, message: "Failed to delete review", error });
+      }
+    });
+    app.put("/reviews/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { rating, comment } = req.body;
+        const { ObjectId } = require("mongodb");
+
+        const result = await reviewsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { rating, comment, date: new Date() } }
+        );
+
+        if (result.modifiedCount > 0) {
+          res.send({ success: true, message: "Review updated successfully" });
+        } else {
+          res.status(404).send({ success: false, message: "Review not found" });
+        }
+      } catch (error) {
+        res
+          .status(500)
+          .send({ success: false, message: "Failed to update review", error });
       }
     });
   } finally {
