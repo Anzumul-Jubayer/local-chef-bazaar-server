@@ -36,6 +36,7 @@ async function run() {
     const reviewsCollection = db.collection("reviews");
     const favoritesCollection = db.collection("favorites");
     const ordersCollection = db.collection("orders");
+    const roleRequestsCollection = db.collection("roleRequests");
 
     // get all meals
     app.get("/meals", async (req, res) => {
@@ -172,8 +173,8 @@ async function run() {
       try {
         const reviews = await reviewsCollection
           .find()
-          .sort({ date: -1 }) 
-          .limit(3) 
+          .sort({ date: -1 })
+          .limit(3)
           .toArray();
 
         res.send({
@@ -256,6 +257,76 @@ async function run() {
         res.send({ success: true, data: result });
       } catch (error) {
         res.send({ success: false, error });
+      }
+    });
+
+    
+
+    // users GET by email
+    app.get("/users/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const user = await usersCollection.findOne({ email });
+
+        if (!user) {
+          return res
+            .status(404)
+            .send({ success: false, message: "User not found" });
+        }
+
+        res.send({ success: true, data: user });
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .send({ success: false, message: "Server error", error });
+      }
+    });
+
+    //  create  new role request
+    app.post("/role-requests", async (req, res) => {
+      try {
+        const { userId, userName, userEmail, requestType } = req.body;
+
+        if (!["chef", "admin"].includes(requestType)) {
+          return res.status(400).send({
+            success: false,
+            message: "Invalid request type",
+          });
+        }
+
+        const requestData = {
+          userId,
+          userName,
+          userEmail,
+          requestType,
+          requestStatus: "pending",
+          requestTime: new Date(),
+        };
+
+        const result = await roleRequestsCollection.insertOne(requestData);
+
+        res.send({ success: true, data: requestData });
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .send({ success: false, message: "Server error", error });
+      }
+    });
+
+    //  admin get  all role requests
+    app.get("/role-requests", async (req, res) => {
+      try {
+        const requests = await roleRequestsCollection
+          .find()
+          .sort({ requestTime: -1 })
+          .toArray();
+        res.send({ success: true, data: requests });
+      } catch (error) {
+        res
+          .status(500)
+          .send({ success: false, message: "Server error", error });
       }
     });
   } finally {
