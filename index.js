@@ -35,6 +35,7 @@ async function run() {
     const usersCollection = db.collection("users");
     const reviewsCollection = db.collection("reviews");
     const favoritesCollection = db.collection("favorites");
+    const ordersCollection=db.collection('orders')
 
     // get all meals
     app.get("/meals", async (req, res) => {
@@ -166,9 +167,9 @@ async function run() {
           .send({ success: false, message: "Error fetching reviews", error });
       }
     });
-     
+
     //  Add to Favorites
-   
+
     app.post("/favorites", async (req, res) => {
       try {
         const fav = req.body;
@@ -203,11 +204,9 @@ async function run() {
         });
       }
     });
-    
 
-    
     // Get  Favorites
- 
+
     app.get("/favorites/:email", async (req, res) => {
       try {
         const email = req.params.email;
@@ -227,6 +226,15 @@ async function run() {
           message: "Error fetching favorites",
           error,
         });
+      }
+    });
+    // orders
+    app.post("/orders", async (req, res) => {
+      try {
+        const result = await ordersCollection.insertOne(req.body);
+        res.send({ success: true, data: result });
+      } catch (error) {
+        res.send({ success: false, error });
       }
     });
   } finally {
