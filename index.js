@@ -81,6 +81,17 @@ async function run() {
         res.status(500).send({ message: "Error fetching meals", error });
       }
     });
+    //  meal post
+    app.post("/meals", async (req, res) => {
+      try {
+        const meal = req.body;
+        const result = await mealsCollection.insertOne(meal);
+
+        res.send({ success: true, data: result });
+      } catch (error) {
+        res.send({ success: false, message: error.message });
+      }
+    });
 
     // meal details page
 
