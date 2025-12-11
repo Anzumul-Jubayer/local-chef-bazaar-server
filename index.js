@@ -117,6 +117,7 @@ async function run() {
           password,
           photoURL,
           status: status || "active",
+          role: "user",
         };
         await usersCollection.insertOne(newUser);
 
@@ -469,7 +470,7 @@ async function run() {
       }
     });
     // delete favorite
-   
+
     app.delete("/favorites/:id", async (req, res) => {
       try {
         const { id } = req.params;
@@ -491,14 +492,24 @@ async function run() {
         }
       } catch (error) {
         console.error(error);
-        res
-          .status(500)
-          .send({
-            success: false,
-            message: "Failed to remove favorite meal",
-            error,
-          });
+        res.status(500).send({
+          success: false,
+          message: "Failed to remove favorite meal",
+          error,
+        });
       }
+    });
+    // get role
+    app.get("/users/role/:email", async (req, res) => {
+      const email = req.params.email;
+
+      const user = await usersCollection.findOne({ email });
+
+      if (!user) {
+        return res.json({ success: false, role: null });
+      }
+
+      res.json({ success: true, role: user.role });
     });
   } finally {
   }
