@@ -1,7 +1,7 @@
 const express = require("express");
 const Stripe = require("stripe");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion,ObjectId } = require("mongodb");
 require("dotenv").config();
 
 const app = express();
@@ -521,6 +521,57 @@ async function run() {
       }
 
       res.json({ success: true, role: user.role });
+    });
+    // Get meals by chef email
+    app.get("/meals-by-chef/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const meals = await mealsCollection
+          .find({ userEmail: email })
+          .toArray();
+        res.send({ success: true, data: meals });
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ success: false, message: "Server error" });
+      }
+    });
+    // Delete meal
+    app.delete("/meals/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const result = await mealsCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+        if (result.deletedCount === 1) {
+          res.send({ success: true, message: "Meal deleted successfully" });
+        } else {
+          res.status(404).send({ success: false, message: "Meal not found" });
+        }
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ success: false, message: "Server error" });
+      }
+    });
+
+    // Update meal
+    app.put("/meals/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+        const updateData = req.body; 
+        const result = await mealsCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updateData }
+        );
+
+        if (result.modifiedCount === 1) {
+          res.send({ success: true, message: "Meal updated successfully" });
+        } else {
+          res.status(404).send({ success: false, message: "Meal not found" });
+        }
+      } catch (err) {
+        console.error(err);
+        res.status(500).send({ success: false, message: "Server error" });
+      }
     });
   } finally {
   }
