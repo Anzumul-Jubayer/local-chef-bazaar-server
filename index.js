@@ -445,6 +445,18 @@ async function run() {
           .send({ success: false, message: "Failed to update payment" });
       }
     });
+    // get orders
+    
+    app.get("/orders", async (req, res) => {
+      try {
+        const orders = await ordersCollection.find().toArray();
+        res.send({ success: true, data: orders });
+      } catch (error) {
+        res
+          .status(500)
+          .send({ success: false, message: "Failed to fetch orders", error });
+      }
+    });
 
     // user review
 
@@ -729,3 +741,4 @@ run().catch(console.dir);
 app.listen(port, () => {
   console.log(`Server running on port: ${port}`);
 });
+
