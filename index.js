@@ -548,6 +548,73 @@ async function run() {
 
       res.json({ success: true, role: user.role });
     });
+    // Get all role requests
+    app.get("/role-requests", async (req, res) => {
+      try {
+        const requests = await roleRequestsCollection
+          .find()
+          .sort({ requestTime: -1 })
+          .toArray();
+        res.json(requests);
+      } catch (error) {
+        res
+          .status(500)
+          .json({ success: false, message: "Failed to fetch requests", error });
+      }
+    });
+    // patch role
+    app.patch("/role-requests/:id/accept", async (req, res) => {
+      try {
+        const requestId = req.params.id;
+        const { requestType, userEmail } = req.body; // send from frontend
+
+        // Update user role
+        let updateData = {};
+        if (requestType === "chef") {
+          const chefId = "chef-" + Math.floor(1000 + Math.random() * 9000);
+          updateData = { role: "chef", chefId };
+        } else if (requestType === "admin") {
+          updateData = { role: "admin" };
+        }
+
+        await usersCollection.updateOne(
+          { email: userEmail },
+          { $set: updateData }
+        );
+
+        // Update request status
+        const result = await roleRequestsCollection.updateOne(
+          { _id: new ObjectId(requestId) },
+          { $set: { requestStatus: "approved" } }
+        );
+
+        res.json({ success: true, message: "Request approved successfully" });
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .json({ success: false, message: "Server error", error });
+      }
+    });
+    // rejected req role
+    app.patch("/role-requests/:id/reject", async (req, res) => {
+      try {
+        const requestId = req.params.id;
+
+        const result = await roleRequestsCollection.updateOne(
+          { _id: new ObjectId(requestId) },
+          { $set: { requestStatus: "rejected" } }
+        );
+
+        res.json({ success: true, message: "Request rejected successfully" });
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .json({ success: false, message: "Server error", error });
+      }
+    });
+
     // Get meals by chef email
     app.get("/meals-by-chef/:email", async (req, res) => {
       try {
@@ -616,7 +683,7 @@ async function run() {
           .send({ success: false, message: "Failed to fetch orders" });
       }
     });
-    // update order status (MongoDB native)
+    // update order status
     app.patch("/update-order-status/:id", async (req, res) => {
       try {
         const orderId = req.params.id;
