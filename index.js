@@ -1,7 +1,7 @@
 const express = require("express");
 const Stripe = require("stripe");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion,ObjectId } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
 const app = express();
@@ -137,6 +137,32 @@ async function run() {
           .json({ message: "User created successfully", user: newUser });
       } catch (error) {
         res.status(500).json({ message: "Error creating user", error });
+      }
+    });
+    // Get all users
+    app.get("/users", async (req, res) => {
+      try {
+        const users = await usersCollection.find().toArray();
+        res.json(users);
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .json({ success: false, message: "Failed to fetch users", error });
+      }
+    });
+
+    // fraud
+    app.patch("/users/:id/fraud", async (req, res) => {
+      const { id } = req.params;
+      const result = await usersCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: "fraud" } }
+      );
+      if (result.modifiedCount > 0) {
+        res.send({ success: true, message: "User marked as fraud" });
+      } else {
+        res.status(404).send({ success: false, message: "User not found" });
       }
     });
 
@@ -557,7 +583,7 @@ async function run() {
     app.put("/meals/:id", async (req, res) => {
       try {
         const id = req.params.id;
-        const updateData = req.body; 
+        const updateData = req.body;
         const result = await mealsCollection.updateOne(
           { _id: new ObjectId(id) },
           { $set: updateData }
@@ -571,6 +597,60 @@ async function run() {
       } catch (err) {
         console.error(err);
         res.status(500).send({ success: false, message: "Server error" });
+      }
+    });
+    // Get all orders for a specific chef
+    app.get("/orders-by-chef/:chefId", async (req, res) => {
+      try {
+        const { chefId } = req.params;
+        const orders = await ordersCollection
+          .find({ chefId })
+          .sort({ orderTime: -1 })
+          .toArray();
+
+        res.send({ success: true, data: orders });
+      } catch (error) {
+        console.error(error);
+        res
+          .status(500)
+          .send({ success: false, message: "Failed to fetch orders" });
+      }
+    });
+    // update order status (MongoDB native)
+    app.patch("/update-order-status/:id", async (req, res) => {
+      try {
+        const orderId = req.params.id;
+        const { orderStatus } = req.body;
+
+        if (!orderStatus) {
+          return res.json({
+            success: false,
+            message: "orderStatus is required",
+          });
+        }
+
+        const result = await ordersCollection.updateOne(
+          { _id: new ObjectId(orderId) },
+          { $set: { orderStatus } }
+        );
+
+        if (result.modifiedCount > 0) {
+          return res.json({
+            success: true,
+            message: "Order status updated successfully",
+          });
+        }
+
+        return res.json({
+          success: false,
+          message: "Failed to update order",
+        });
+      } catch (error) {
+        console.error(error);
+        res.json({
+          success: false,
+          message: "Server error",
+        });
       }
     });
   } finally {
