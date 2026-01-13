@@ -8,7 +8,7 @@ It connects users and chefs in a simple and friendly way.
 
 ## 🌐 Live Website
 Live URL: https://local-chef-bazar-a-11.netlify.app/ 
-Server :https://local-chef-bazaar-server-flame.vercel.app/
+Server :https://local-chef-bazaar-server-hazel.vercel.app/
 
 
 
